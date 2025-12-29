@@ -9,6 +9,8 @@ library(car)
 library(corrplot)
 library(bslib)
 
+
+
 # Función alternativa para matriz de dispersión
 simple_pairs_plot <- function(data) {
   if (ncol(data) < 2) return(NULL)
@@ -58,7 +60,9 @@ simple_pairs_plot <- function(data) {
 
 # Definir UI
 ui <- fluidPage(
+  withMathJax(),
   theme = shinytheme("flatly"),
+  tags$head(tags$link(rel="icon", type="image/png", href="icon.png")),
   titlePanel("Analisis de Regresion Lineal Interactivo"),
   
   sidebarLayout(
@@ -94,7 +98,11 @@ ui <- fluidPage(
                    width = "100%"),
       
       hr(),
-      helpText("Selecciona un dataset y las variables para el modelo.")
+      helpText("Selecciona un dataset y las variables para el modelo."),
+      br(), # Espaciado
+      div(style = "text-align: center;",
+          img(src = "icon.png", height = "200px", width = "auto")
+      )
     ),
     
     mainPanel(
@@ -154,6 +162,73 @@ ui <- fluidPage(
                  br(),
                  h4("Grafico de Prediccion vs Real"),
                  plotOutput("prediction_plot", height = "400px")
+        ),
+        
+        tabPanel("Teoria de Regresion",
+                 br(),
+                 h3("Teoria de la Regresion Lineal"),
+                 p("La regresion lineal es un metodo estadistico que modela la relacion entre una variable dependiente (Y) y una o mas variables independientes (X). El objetivo es encontrar la mejor linea (o hiperplano) que explique los datos."),
+                 
+                 hr(),
+                 
+                 h4("1. Modelo Matematico"),
+                 p("El modelo de regresion lineal multiple se expresa como:"),
+                 p("$$Y = \\beta_0 + \\beta_1X_1 + \\beta_2X_2 + ... + \\beta_kX_k + \\epsilon$$"),
+                 tags$ul(
+                   tags$li(strong("Y:"), "Variable dependiente (respuesta)."),
+                   tags$li(strong("X:"), "Variables independientes (predictores)."),
+                   tags$li(strong("\\(\\beta_0\\):"), "Intercepto (valor esperado de Y cuando todas las X son 0)."),
+                   tags$li(strong("\\(\\beta_i\\):"), "Coeficientes (cambio promedio en Y por cada unidad que aumenta \\(X_i\\), manteniendo las demas constantes)."),
+                   tags$li(strong("\\(\\epsilon\\):"), "Error aleatorio (residual), representa la variabilidad no explicada por el modelo.")
+                 ),
+                 
+                 br(),
+                 h4("2. Supuestos del Modelo"),
+                 p("Para que los estimadores sean insesgados y eficientes (Teorema de Gauss-Markov), y para realizar inferencia valida, se deben cumplir los siguientes supuestos:"),
+                 tags$ol(
+                   tags$li(strong("Linealidad:"), "La relacion entre las variables independientes y la media de la variable dependiente es lineal. Si no se cumple, las predicciones seran sesgadas."),
+                   tags$li(strong("Independencia:"), "Los residuos (errores) deben ser independientes entre si. La violacion de este supuesto (autocorrelacion) afecta los errores estandar y los valores p."),
+                   tags$li(strong("Homocedasticidad:"), "La varianza de los residuos debe ser constante en todos los niveles de las variables predictoras. Si la varianza cambia (heterocedasticidad), los errores estandar seran incorrectos."),
+                   tags$li(strong("Normalidad:"), "Los residuos deben seguir una distribucion normal (para muestras pequeñas). Esto es crucial para la validez de los intervalos de confianza y las pruebas de hipotesis."),
+                   tags$li(strong("No Multicolinealidad:"), "Las variables independientes no deben estar altamente correlacionadas entre si. La multicolinealidad infla la varianza de los coeficientes, haciendolos inestables.")
+                 ),
+                 
+                 br(),
+                 h4("3. Pruebas de Diagnostico e Interpretacion"),
+                 p("Esta aplicacion incluye pruebas estadisticas para validar los supuestos anteriores:"),
+                 tags$dl(
+                   tags$dt("Normalidad de Residuos (Test de Shapiro-Wilk)"),
+                   tags$dd("Evalua si los residuos siguen una distribucion normal.",
+                           tags$ul(
+                             tags$li(em("Hipotesis Nula (H0):"), "Los datos siguen una distribucion normal."),
+                             tags$li(em("Interpretacion:"), "Si el p-value > 0.05, no se rechaza H0 (asumimos normalidad). Si p-value < 0.05, se rechaza H0 (no hay normalidad).")
+                           )),
+                   br(),
+                   tags$dt("Homocedasticidad (Test de Breusch-Pagan)"),
+                   tags$dd("Evalua si la varianza de los errores es constante (homocedasticidad) o si varia (heterocedasticidad).",
+                           tags$ul(
+                             tags$li(em("Hipotesis Nula (H0):"), "La varianza es constante (homocedasticidad)."),
+                             tags$li(em("Interpretacion:"), "Si el p-value > 0.05, asumimos homocedasticidad. Si p-value < 0.05, hay evidencia de heterocedasticidad.")
+                           )),
+                   br(),
+                   tags$dt("Multicolinealidad (VIF - Factor de Inflacion de la Varianza)"),
+                   tags$dd("Mide cuanto aumenta la varianza de un coeficiente debido a la correlacion con otras variables.",
+                           tags$ul(
+                             tags$li("VIF = 1: No hay correlacion."),
+                             tags$li("1 < VIF < 5: Correlacion moderada (generalmente aceptable)."),
+                             tags$li("VIF > 5 o 10: Alta multicolinealidad (preocupante, considere eliminar variables).")
+                           ))
+                 ),
+                 
+                 br(),
+                 h4("4. Interpretacion de Graficos de Diagnostico"),
+                 tags$ul(
+                   tags$li(strong("Residuos vs Ajustados:"), "Se usa para verificar linealidad y homocedasticidad. Idealmente, los puntos deben distribuirse aleatoriamente alrededor de la linea horizontal 0, sin patrones claros (como forma de embudo o 'U')."),
+                   tags$li(strong("Q-Q Plot (Normal Q-Q):"), "Verifica la normalidad. Los puntos (residuos estandarizados) deben alinearse sobre la linea diagonal punteada. Desviaciones en los extremos indican colas pesadas o asimetria."),
+                   tags$li(strong("Escala-Localizacion:"), "Similar al primero, verifica la homocedasticidad usando la raiz cuadrada de los residuos. La linea roja debe ser aproximadamente horizontal."),
+                   tags$li(strong("Residuos vs Leverage:"), "Identifica valores influyentes (outliers). Puntos fuera de las lineas de 'Distancia de Cook' pueden tener un impacto desproporcionado en el modelo.")
+                 ),
+                 br()
         )
       )
     )
